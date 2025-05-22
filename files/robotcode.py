@@ -54,7 +54,7 @@ class Vision():
 
         self.cap = cv2.VideoCapture(1)
 
-
+ 
     def start_up(self):
         ret, frame = self.cap.read()
 
@@ -148,7 +148,7 @@ class Vision():
         for i, (x, y, w, h) in enumerate(self.box_mold):
             rect = self.dst[y:y+h, x:x+w]
             
-            if i == 0:  # Primer rectángulo: debe detectar naranja
+            if i == 0:  # First rectangle must be orange
                 orange_area = self.detect_orange_colour(rect)
                 if orange_area > 6000:
                     self.box_mold_detected.append(i + 1)  # Save mold number
@@ -159,7 +159,7 @@ class Vision():
                     cv2.rectangle(self.dst, (x, y), (x+w, y+h), (0, 0, 255), 2)
                     cv2.putText(self.dst, 'Empty', (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-            elif i == 1:  # Segundo rectángulo: debe detectar gris
+            elif i == 1:  # Second rectangle must be grey
                 grey_area = self.detect_grey_colour(rect)
                 if grey_area > 500:
                     self.box_mold_detected.append(i + 1)  # Save mold number
@@ -170,7 +170,7 @@ class Vision():
                     cv2.rectangle(self.dst, (x, y), (x+w, y+h), (0, 0, 255), 2)
                     cv2.putText(self.dst, 'Empty', (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-            elif i == 2:  # Tercer rectángulo: debe detectar blanco
+            elif i == 2:  # Third rectangle must be white
                 white_area = self.detect_white_colour(rect)
                 if white_area > 6000:
                     self.box_mold_detected.append(i + 1)  # Save mold number
@@ -193,7 +193,7 @@ class Vision():
             rect = self.dst[y:y+h, x:x+w]
 
             # Detect color based on the specific rectangle
-            if i == 0:  # Primer rectángulo: debe detectar naranja
+            if i == 0:  # First rectangle must be orange
                 orange_area = self.detect_orange_colour(rect)
                 if orange_area > 6000:
                     self.lid_mold_detected.append(i + 1)  # Save lid number
@@ -204,7 +204,7 @@ class Vision():
                     cv2.rectangle(self.dst, (x, y), (x+w, y+h), (0, 0, 255), 2)
                     cv2.putText(self.dst, 'Empty', (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-            elif i == 1:  # Segundo rectángulo: debe detectar gris
+            elif i == 1:  # Second rectangle must be grey
                 grey_area = self.detect_grey_colour(rect)
                 if grey_area > 500:
                     self.lid_mold_detected.append(i + 1)  # Save lid number
@@ -215,7 +215,7 @@ class Vision():
                     cv2.rectangle(self.dst, (x, y), (x+w, y+h), (0, 0, 255), 2)
                     cv2.putText(self.dst, 'Empty', (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-            elif i == 2:  # Tercer rectángulo: debe detectar blanco
+            elif i == 2:  # Third rectangle must be white
                 white_area = self.detect_white_colour(rect)
                 if white_area > 6000:
                     self.lid_mold_detected.append(i + 1)  # Save lid number
@@ -233,11 +233,7 @@ class Vision():
 
 class Path():
     def __init__(self, parent):
-        self.stop = False
-        self.resume = False
-        self.running = False
-        self.ui = parent
-        self.calculation_method = 0  # Default calculation method
+        self.parent = parent
         self.mode = 0
         self.cells = []
         self.box = 0
@@ -252,10 +248,10 @@ class Path():
         try:
             """Main script to execute the robot program."""
             # Set robot speed and acceleration
-            self.ui.robot.setSpeed(50)
-            self.ui.robot.setAcceleration(100)
-            self.ui.robot.setSpeedJoints(15)
-            self.ui.robot.setAccelerationJoints(30)
+            self.parent.robot.setSpeed(50)
+            self.parent.robot.setAcceleration(100)
+            self.parent.robot.setSpeedJoints(15)
+            self.parent.robot.setAccelerationJoints(30)
 
 
             #start_process = perf_counter()
@@ -357,7 +353,7 @@ class Path():
                     self.assembled[box-1] = []
                     self.disassemble_box(box)
                     # Replace virtual box and its cells
-                    self.ui.virtual_replace(box, cells)
+                    self.parent.virtual_replace(box, cells)
                     
             
             print("[INFO] Main script execution complete.")
@@ -370,30 +366,30 @@ class Path():
     
     def script_execution(self, targets):
         '''Execute the script with the given targets'''
-        self.ui.RDK.setRunMode(RUNMODE_RUN_ROBOT)
+        self.parent.RDK.setRunMode(RUNMODE_RUN_ROBOT)
 
         # Set reference and tool
-        reference_frame = self.ui.RDK.Item('UR10e Base', ITEM_TYPE_FRAME)
-        tool = self.ui.RDK.Item('tcp', ITEM_TYPE_TOOL)
+        reference_frame = self.parent.RDK.Item('UR10e Base', ITEM_TYPE_FRAME)
+        tool = self.parent.RDK.Item('tcp', ITEM_TYPE_TOOL)
 
         try:
-            self.ui.robot.setPoseFrame(reference_frame)
-            self.ui.robot.setPoseTool(tool)
+            self.parent.robot.setPoseFrame(reference_frame)
+            self.parent.robot.setPoseTool(tool)
         except:
             pass
 
         # Follow path
         for name in targets:
-            target = self.ui.RDK.Item(name, ITEM_TYPE_TARGET)
+            target = self.parent.RDK.Item(name, ITEM_TYPE_TARGET)
             if not target.Valid():
                 print(f"[WARNING] Target '{name}' not found!")
                 continue
             else:
-                self.ui.robot.MoveJ(target)
+                self.parent.robot.MoveJ(target)
 
 ################################ ASSEMBLY AND DISASSEMBLY PATHS ####################################################
     def place_box(self, box_number):
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = ['Home']
 
         #go to take a box
@@ -401,73 +397,57 @@ class Path():
         targets.append(f"box{box_number}go")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_box(box_number)
-        #self.ui.robot.WaitFinished()
+        self.parent.gripper.gripper_close_box(box_number)
 
-        #self.virtual_gripper_update(f'Attach box{box_number}')
-        #self.ui.robot.WaitFinished()
-        #sleep(3)
 
         #take out the box and put it in the assembly station
         targets.append(f"box{box_number}up") 
         targets.append(f"box{box_number}out")
         targets.append('box_to_assembly')
         targets.append(f"box_assembly{box_number}approach")
-        #self.script_execution(targets)
-        #targets = []
-        #self.calculation_method = 3
         targets.append(f"box_assembly{box_number}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
-        #self.calculation_method = 0
-        #self.virtual_gripper_update(f"Detach")
+        self.parent.gripper.gripper_open()
         targets.append('assembly_out')
         targets.append('assembly_up')
         self.script_execution(targets)
         targets = []
         
     def place_cell(self, cell_number, position_in_box):
-        #self.ui.gripper.gripper_open_cell()
         targets = ['Home']
+
         #go to take a cell
-        #targets.append(f"cellsposition")
         targets.append(f"cell{cell_number}pos")
         targets.append(f"cell{cell_number}go")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_cell(cell_number)
-        #self.virtual_gripper_update(f"Attach cell{cell_number}")
+        self.parent.gripper.gripper_close_cell(cell_number)
+
         #take out the cell and put it in the box
         targets.append(f"cell{cell_number}up")
         targets.append(f"cell{cell_number}out")
         targets.append('Home')
         targets.append(f"place_cell{position_in_box}pos")
-        #self.script_execution(targets)
-        #targets = []
-        #self.calculation_method = 3
         targets.append(f"place_cell{position_in_box}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open_cell()
-        #self.virtual_gripper_update(f"Detach cell {cell_number}")
-        #self.calculation_method = 0  
+        self.parent.gripper.gripper_open_cell() 
      
         targets.append(f"place_cell{position_in_box}pos")
         self.script_execution(targets)
         targets = []
 
     def place_full_box(self, shelf_position):
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = ['Home']
         #go to take the full box
         targets.append('full_box_position') 
         targets.append('grab_full_box')
         self.script_execution(targets)
-        self.ui.gripper.gripper_close_box(self.box)
+        self.parent.gripper.gripper_close_box(self.box)
         targets = []
         targets.append('grab_full_box_approach')
-        #self.virtual_gripper_update(f"Attach box {box_number}")
         
         #put full box in the shelf
         targets.append('full_box_up')
@@ -477,8 +457,8 @@ class Path():
         targets.append(f"place{shelf_position}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
-        #self.virtual_gripper_update(f"Detach box {box_number}")
+        self.parent.gripper.gripper_open()
+
         #change the grip of the lid
         targets.append(f"place{shelf_position}out")
         targets.append('Home')
@@ -486,16 +466,14 @@ class Path():
         targets = []
         
     def place_lid(self, lid_number):   
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = ['Home']
         
         #go to take a lid
-        #targets.append(f"lidsposition")
         targets.append(f"lid{lid_number}pos")
         targets.append(f"lid{lid_number}go")
         self.script_execution(targets)
-        self.ui.gripper.gripper_close_lid(lid_number)
-        #self.virtual_gripper_update(f"Attach lid{lid_number}")
+        self.parent.gripper.gripper_close_lid(lid_number)
         targets = []
 
         #take out the lid and put it in the assembly station
@@ -504,37 +482,28 @@ class Path():
         targets.append(f"lid{lid_number}out")
         targets.append('lid_to_assembly')
         targets.append('lid_in_assembly')
-        targets.append(f"lid_assembly{lid_number}down")
         targets.append(f"lid_assembly{lid_number}approach")
+        targets.append(f"lid_assembly{lid_number}down")
         self.script_execution(targets)
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = []
 
         #change the grip of the lid
         targets.append('new_grab')
-        targets.append('new_grab_approach')
         targets.append('new_grab_down')
         self.script_execution(targets)
-        self.ui.gripper.gripper_close_lid(lid_number)
-        #self.virtual_gripper_update(f"Attach lid{lid_number}")
+        self.parent.gripper.gripper_close_lid(lid_number)
         targets = []
 
         #put lid on the box
-        #self.calculation_method = 3
+        targets.append('new_grab_approach')
         targets.append('lid_to_shelf')
-        #self.script_execution(targets)
-        #targets = []
-        #self.calculation_method = 0
         targets.append(f"lid{lid_number}shelf")
-        #self.script_execution(targets)
-        #targets = []
-        #self.calculation_method = 3
         targets.append(f"lid{lid_number}down")
         self.script_execution(targets)
         targets = []
-        #self.calculation_method = 0
-        self.ui.gripper.gripper_open()
-        #self.virtual_gripper_update(f"Detach lid {lid_number}")
+        self.parent.gripper.gripper_open()
+
 
         #leave lid on the shelf
         targets.append(f"lid{lid_number}shelf")
@@ -543,7 +512,7 @@ class Path():
         targets = []
     
     def disassemble_box(self, box_number):
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = ['Home']
         #take box from assembly
         targets.append('assembly_up')
@@ -551,19 +520,17 @@ class Path():
         targets.append(f"box_assembly{box_number}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_box(box_number)
-        #self.virtual_gripper_update(f"Attach box{id_box}")
-
+        self.parent.gripper.gripper_close_box(box_number)
+        
         #take box and put it in the shelf
         targets.append(f"box_assembly{box_number}approach")
         targets.append('box_to_assembly')
         targets.append(f"box{box_number}out")
         targets.append(f"box{box_number}up")
-        targets.append(f"box{box_number}go")
+        targets.append(f"box{box_number}approach")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
-        #self.virtual_gripper_update(f"Detach")
+        self.parent.gripper.gripper_open()
 
         #leave box
         targets.append(f"box{box_number}pos")
@@ -577,8 +544,7 @@ class Path():
         targets.append(f"place_cell{position_in_box}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_cell(cell_number)
-        #self.virtual_gripper_update(f"Attach cell{cell_number}")
+        self.parent.gripper.gripper_close_cell(cell_number)
         
         #take out the cell and put it in the shelf
         targets.append(f"place_cell{position_in_box}pos")
@@ -587,9 +553,8 @@ class Path():
         targets.append(f"cell{cell_number}up")
         targets.append(f"cell{cell_number}go")
         self.script_execution(targets)
-        self.ui.gripper.gripper_open_cell()
+        self.parent.gripper.gripper_open_cell()
         targets = []
-        #self.virtual_gripper_update(f"Detach")
 
         #leave cell
         targets.append(f"cell{cell_number}pos")
@@ -598,15 +563,15 @@ class Path():
         targets = []
 
     def disassemble_full_box(self, shelf_position):
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         targets = []
+
         #take box from final shelf
         targets.append(f"place{shelf_position}out")
         targets.append(f"place{shelf_position}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_box(shelf_position)
-        #self.virtual_gripper_update(f"Attach box{id_box}")
+        self.parent.gripper.gripper_close_box(shelf_position)
         
         #put full box in the shelf
         targets.append(f"place{shelf_position}approach")
@@ -617,17 +582,16 @@ class Path():
         targets.append('grab_full_box')
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
-        #self.virtual_gripper_update(f"Detach")
+        self.parent.gripper.gripper_open()
         
         #leave full box in assembly
         targets.append('full_box_position')
         targets.append('Home')
         self.script_execution(targets)
-        self.ui.gripper.gripper_open_cell()
+        self.parent.gripper.gripper_open_cell()
 
     def disassemble_lid(self, lid_number):
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
 
         #take lid from the shelf
         targets = ['Home']
@@ -635,27 +599,24 @@ class Path():
         targets.append(f"lid{lid_number}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_lid(lid_number)
-        #self.virtual_gripper_update(f"Attach lid{id_box}")
+        self.parent.gripper.gripper_close_lid(lid_number)
 
         #put lid on the box
         targets.append(f"lid{lid_number}shelf")
         targets.append('lid_to_shelf')
         targets.append('new_grab')
-        targets.append('new_grab_approach')
-        targets.append('new_grab_down')
+        targets.append(f'new_grab{lid_number}approach')
+        targets.append(f'new_grab_{lid_number}down')
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
-        #self.virtual_gripper_update(f"Detach")
+        self.parent.gripper.gripper_open()
         
         #change the grip of the lid
         targets.append('new_grab')
         targets.append(f"lid_assembly{lid_number}down")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_close_lid(lid_number)
-        #self.virtual_gripper_update(f"Attach lid{id_box}")
+        self.parent.gripper.gripper_close_lid(lid_number)
 
         #take out the from assembly and put it in the shelf
         targets.append(f"lid_assembly{lid_number}approach")
@@ -667,7 +628,7 @@ class Path():
         targets.append(f"lid{lid_number}go")
         self.script_execution(targets)
         targets = []
-        self.ui.gripper.gripper_open()
+        self.parent.gripper.gripper_open()
         #self.virtual_gripper_update(f"Detach")
         
         #leave lid
